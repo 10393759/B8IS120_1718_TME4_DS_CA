@@ -1,6 +1,9 @@
 from flask import Flask
 from flask import request
 from flask_mysqldb import MySQL
+import mysql.connector
+from mysql.connector import Error
+from mysql.connector import errorcode
 mysql = MySQL()
 app = Flask(__name__)
 
@@ -36,7 +39,7 @@ def booking(): #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Show Available
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-@app.route("/showavl") # Show All Bookings Data
+@app.route("/showavl") # Show Seats Available To Be Booked
 def available(): # 
     cur = mysql.connection.cursor() #create a connection to the SQL instance
     cur.execute('''SELECT seatID, seatName FROM bookings where seatBooked = 0''') # 0 means seat is not booked
@@ -49,7 +52,7 @@ def available(): #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Show Booked
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-@app.route("/showbkd") # Show All Bookings Data
+@app.route("/showbkd") # Show Seats that have been booked
 def booked(): # 
     cur = mysql.connection.cursor() #create a connection to the SQL instance
     cur.execute('''SELECT seatID, seatName, bookedBy FROM bookings where seatBooked = 1''') # 1 means seat is booked
@@ -62,7 +65,7 @@ def booked(): #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Show JSON
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-@app.route("/json") # Show All Bookings Data
+@app.route("/json") # Show All Bookings Data in JSON Format
 def booking(): # 
     cur = mysql.connection.cursor() #create a connection to the SQL instance
     cur.execute('''SELECT * FROM bookings''') # execute an SQL statement to get booking data
@@ -77,7 +80,53 @@ def booking(): #
         ret=ret+'{"SeatID": 'str(row[0])+', "SeatName": "'+row[1]+'", "SeatBooked": '+str(row[2])+', "BookedBy": '+str(row[3])+'}'
     ret=ret+']}'
     return ret      #Return the data in a string format
-
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# INSERT New Seats
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@app.route("/add") # Insert New Seats available for booking
+def addnew(): # 
+    cur = mysql.connection.cursor() #create a connection to the SQL instance
+    cur.execute('''INSERT INTO bookings (seatName) VALUES (name)''') # 1 means seat is booked
+    return ret      #Return the data in a string format
+#
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Book a Seat
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@app.route("/book") # Book a Seat
+def book(): # 
+    cur = mysql.connection.cursor() #create a connection to the SQL instance
+    conn.autocommit = false
+    cursor = conn.cursor()
+    sql_update_query = """Update bookings set seatBooked = 1 and bookedBy = by where seatID = id and seatBooked = 0""" 
+    cursor.execute(sql_update_query)
+    ret = ("Seat has been booked")
+    #Commit your changes
+    conn.commit()
+    except mysql.connector.Error as error :
+    ret = ("Booking Failed to update record to database rollback: {}".format(error))
+    #reverting changes because of exception
+    return ret      #Return the data in a string format
+#
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Cancel a Booking
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@app.route("/can") # Book a Seat
+def can(): # 
+    cur = mysql.connection.cursor() #create a connection to the SQL instance
+    conn.autocommit = false
+    cursor = conn.cursor()
+    sql_update_query = """Update bookings set seatBooked = 0 where seatID = id and seatBooked = 1""" 
+    cursor.execute(sql_update_query)
+    ret = ("Booking has been Canceled")
+    #Commit your changes
+    conn.commit()
+    except mysql.connector.Error as error :
+    ret = ("Cancelation Failed to update record to database rollback: {}".format(error))
+    #reverting changes because of exception
+    return ret      #Return the data in a string format
+#
 #
 if __name__ == "__main__":
         # avoid WARNING: Do not use the development server in a production environment.
